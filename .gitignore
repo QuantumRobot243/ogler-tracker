@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+
+*.dat
+*.bz2
+
+outputs/
+
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+*.log

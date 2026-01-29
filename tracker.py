@@ -1,32 +1,30 @@
 import cv2
-import mediapipe as mp
-
+import dlib
+import numpy as np
 
 class EyeTracker:
     def __init__(self):
-        # Initialize MediaPipe Face Mesh
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
-            max_num_faces=1,
-            refine_landmarks=True,  # enables iris landmarks
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5
-        )
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
     def get_gaze_point(self, frame, screen_w, screen_h):
-        # Convert BGR (OpenCV) to RGB (MediaPipe requirement)
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.face_mesh.process(rgb_frame)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = self.detector(gray)
 
-        if results.multi_face_landmarks:
-            mesh_points = results.multi_face_landmarks[0].landmark
+        for face in faces:
+            landmarks = self.predictor(gray, face)
 
-            # Left iris landmark (468)
-            left_iris = mesh_points[468]
+            x_pts = [landmarks.part(i).x for i in range(36, 42)]
+            y_pts = [landmarks.part(i).y for i in range(36, 42)]
 
-            x = int(left_iris.x * screen_w)
-            y = int(left_iris.y * screen_h)
+            center_x = sum(x_pts) / len(x_pts)
+            center_y = sum(y_pts) / len(y_pts)
 
-            return x, y
+            cam_h, cam_w = frame.shape[:2]
+
+            screen_x = int((center_x / cam_w) * screen_w)
+            screen_y = int((center_y / cam_h) * screen_h)
+
+            return screen_x, screen_y
 
         return None
